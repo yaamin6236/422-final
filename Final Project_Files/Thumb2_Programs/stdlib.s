@@ -10,8 +10,9 @@
 ;   none
 		EXPORT	_bzero
 _bzero
-		; implement your complete logic, including stack operations
-		MOV		pc, lr	
+		; store current state of registers before performing any operations
+		; STMFD
+		MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; char* _strncpy( char* dest, char* src, int size )
