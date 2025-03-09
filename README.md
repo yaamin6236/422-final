@@ -31,6 +31,20 @@ cd your-repo-name
 3. Navigate to the cloned repository and open the `.uvprojx` file
 4. The project structure should load with all necessary files
 
+### Debugging Instructions
+1. Configure simulator: `Project > Options for Target > Debug tab > Use Simulator`
+2. Build: `Project > Build Target` (F7)
+3. Start debugging: `Debug > Start/Stop Debug Session` (Ctrl+F5)
+4. Debug controls:
+  - Run (F5), Stop, Reset
+  - Step (F11), Step Over (F10), Step Out
+  - Set breakpoints by clicking in the margin
+5. View memory: `View > Memory Window`
+  - MCB area: 0x20006800-0x20006BFF
+  - System calls: 0x20007B00
+  - Timer variables: 0x20007B80, 0x20007B84
+6. End debugging: `Debug > Start/Stop Debug Session`
+
 If files are missing:
 1. Right-click on "Source Group 1" in the Project panel
 2. Select "Add Existing Files to Group..."
