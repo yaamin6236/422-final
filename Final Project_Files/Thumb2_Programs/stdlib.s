@@ -20,14 +20,13 @@ _bzero
 		MOV			R3, #0
 
 _bzero_loop
-		; decrement n var (R1)
-		SUB			R1, R1, #1
-		
-		; check if n is less than or equal to 0
+		; check if n is equal to 0
 		; branch to _bzero_end if true
 		CMP			R1, #0
 		BEQ			_bzero_end
-		BLT			_bzero_end
+		
+		; decrement n var (R1)
+		SUB			R1, R1, #1
 		
 		; zero-initialize current memory location
 		; accesses contents of R0 and stores byte R3 (set to immediate value 0) in it
@@ -45,6 +44,9 @@ _bzero_end
 
 		; restores original state of registers (before _bzero function call)
 		LDMFD		SP!, {R1-R12, LR}
+		
+		; return back to main function
+		MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; char* _strncpy( char* dest, char* src, int size )
@@ -66,20 +68,23 @@ _strncpy
 		MOV			R4, R1
 		
 _strncpy_loop
-		; decrement size var (R2)
-		SUB			R2, R2, #1
-		
-		; check if size var is less than or equal to 0
+		; check if size var equal to 0
 		; branch to _strncpy_end if condition evaluates to true
 		CMP			R2, #0
 		BEQ			_strncpy_end
-		BLT			_strncpy_end
 		
-		; load byte at current memory location of *src (R1) and store in R5
-		LDRB		R5, R0
+		; decrement size var (R2)
+		SUB			R2, R2, #1
 		
-		; store byte 
+		; load byte at current memory location of *src (R1) and load into R5
+		; increment to next byte in src*
+		LDRB		R5, [R1], #1
 		
+		; store byte stored in R5 and access and store in current memory location of *dest (R0)
+		; increment to next byte in dest*
+		STRB		R5, [R0], #1
+		
+		B			_strncpy_loop
 	
 _strncpy_end
 		; store original address of dest (R3) back into R0 (*dest)
@@ -90,6 +95,9 @@ _strncpy_end
 		
 		; restores original state of registers (before _strncpy function call)
 		LDMFD		SP!, {R1-R12, LR}
+		
+		; return back to main function
+		MOV		pc, lr
 		
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; void* _malloc( int size )
