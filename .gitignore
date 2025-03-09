@@ -1,0 +1,36 @@
+# Keil µVision generated files
+*.yaami
+*.uvoptx
+*.uvguix.*
+*.dep
+*.d
+*.o
+*.obj
+*.crf
+*.lst
+*.map
+*.axf
+*.hex
+*.bin
+*.sct
+*.iex
+*.lnp
+*.htm
+*.scvd
+
+# Build output directories
+Objects/
+Listings/
+DebugConfig/
+RTE/
+
+# Temporary files
+*.bak
+*.__i
+*.i
+*._ia
+.#*
+
+# System-specific files
+Thumbs.db
+.DS_Store
