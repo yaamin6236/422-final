@@ -205,8 +205,24 @@ Reset_Handler   PROC
                 EXPORT  Reset_Handler             [WEAK]
                 IMPORT  SystemInit
                 IMPORT  __main
+                
+                ; Call SystemInit to set up system clock
                 LDR     R0, =SystemInit
                 BLX     R0
+                
+                ; Store the initial MSP
+                LDR     R0, =__initial_sp
+                MOV     R12, R0
+                
+                ; Set up and switch to PSP for user mode
+                LDR     R0, =Stack_Mem            ; Base of stack memory
+                ADD     R0, R0, #Stack_Size       ; Calculate top of user stack
+                MSR     PSP, R0                   ; Set PSP
+                MOV     R0, #0x2                  ; Set control bit 1 (SPSEL) to use PSP
+                MSR     CONTROL, R0               ; Update CONTROL register
+                ISB                               ; Instruction Synchronization Barrier
+                
+                ; Branch to __main (which will call main())
                 LDR     R0, =__main
                 BX      R0
                 ENDP
@@ -240,7 +256,7 @@ UsageFault_Handler\
                 ENDP
 SVC_Handler     PROC
                 EXPORT  SVC_Handler               [WEAK]
-                B       .
+                MOV     PC, LR                    ; Simply return for now
                 ENDP
 DebugMon_Handler\
                 PROC
@@ -252,10 +268,10 @@ PendSV_Handler\
                 EXPORT  PendSV_Handler            [WEAK]
                 B       .
                 ENDP
-SysTick_Handler\
-                PROC
+					
+SysTick_Handler PROC
                 EXPORT  SysTick_Handler           [WEAK]
-                B       .
+                MOV     PC, LR                    ; Simply return for now
                 ENDP
 
 GPIOA_Handler\
