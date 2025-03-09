@@ -10,8 +10,41 @@
 ;   none
 		EXPORT	_bzero
 _bzero
-		; implement your complete logic, including stack operations
-		MOV		pc, lr	
+		; store current state of registers before performing any operations
+		STMFD		SP!, {R1-R12, LR}
+		
+		; store original address of *s (R0) in R2
+		MOV			R2, R0
+		
+		; store immediate value of 0 into R3
+		MOV			R3, #0
+
+_bzero_loop
+		; decrement n var (R1)
+		SUB			R1, R1, #1
+		
+		; check if n is less than or equal to 0
+		; branch to _bzero_end if true
+		CMP			R1, #0
+		BEQ			_bzero_end
+		BLT			_bzero_end
+		
+		; zero-initialize current memory location
+		; accesses contents of R0 and stores byte R3 (set to immediate value 0) in it
+		STRB		R3, [R0]
+		
+		; increment current memory location by one byte
+		ADD			R0, R0, #1
+		
+		; continue to next iteration
+		B			_bzero_loop
+
+_bzero_end
+		; stores original address of s (R2) back into R0 (*s)'
+		MOV			R0, R2
+
+		; restores original state of registers (before _bzero function call)
+		LDMFD		SP!, {R1-R12, LR}
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; char* _strncpy( char* dest, char* src, int size )
