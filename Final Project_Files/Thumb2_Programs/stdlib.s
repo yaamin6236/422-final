@@ -40,7 +40,7 @@ _bzero_loop
 		B			_bzero_loop
 
 _bzero_end
-		; stores original address of s (R2) back into R0 (*s)'
+		; store original address of *s (R2) back into R0 (*s)
 		MOV			R0, R2
 
 		; restores original state of registers (before _bzero function call)
@@ -56,8 +56,40 @@ _bzero_end
 ;   dest
 		EXPORT	_strncpy
 _strncpy
-		; implement your complete logic, including stack operations
-		MOV		pc, lr
+		; store current state of registers before performing any operations
+		STMFD		SP!, {R1-R12, LR}
+		
+		; store original address of *dest (R0) in R3
+		MOV			R3, R0
+		
+		; store original address of *src (R1) in R4
+		MOV			R4, R1
+		
+_strncpy_loop
+		; decrement size var (R2)
+		SUB			R2, R2, #1
+		
+		; check if size var is less than or equal to 0
+		; branch to _strncpy_end if condition evaluates to true
+		CMP			R2, #0
+		BEQ			_strncpy_end
+		BLT			_strncpy_end
+		
+		; load byte at current memory location of *src (R1) and store in R5
+		LDRB		R5, R0
+		
+		; store byte 
+		
+	
+_strncpy_end
+		; store original address of dest (R3) back into R0 (*dest)
+		MOV			R0, R3
+		
+		; store original address of src (R4) back into R1 (*src)
+		MOV			R1, R4
+		
+		; restores original state of registers (before _strncpy function call)
+		LDMFD		SP!, {R1-R12, LR}
 		
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; void* _malloc( int size )
