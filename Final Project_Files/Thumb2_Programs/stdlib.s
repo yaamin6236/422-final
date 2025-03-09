@@ -30,10 +30,8 @@ _bzero_loop
 		
 		; zero-initialize current memory location
 		; accesses contents of R0 and stores byte R3 (set to immediate value 0) in it
-		STRB		R3, [R0]
-		
-		; increment current memory location by one byte
-		ADD			R0, R0, #1
+		; increment to next byte in R0
+		STRB		R3, [R0], #1
 		
 		; continue to next iteration
 		B			_bzero_loop
@@ -84,6 +82,7 @@ _strncpy_loop
 		; increment to next byte in dest*
 		STRB		R5, [R0], #1
 		
+		; continue to next iteration
 		B			_strncpy_loop
 	
 _strncpy_end
