@@ -51,6 +51,8 @@ __heap_limit
 
                 PRESERVE8
                 THUMB
+					
+				IMPORT 	_syscall_table_jump
 
 
 ; Vector Table Mapped to Address 0 at Reset
@@ -205,11 +207,16 @@ Reset_Handler   PROC
                 EXPORT  Reset_Handler             [WEAK]
                 IMPORT  SystemInit
                 IMPORT  __main
-                
+                IMPORT 	_syscall_table_init
+					
                 ; Call SystemInit to set up system clock
                 LDR     R0, =SystemInit
                 BLX     R0
                 
+				;initialize system call table
+				LDR 	R0, =_syscall_table_init
+				BLX 	R0
+				
                 ; Store the initial MSP
                 LDR     R0, =__initial_sp
                 MOV     R12, R0
@@ -256,7 +263,11 @@ UsageFault_Handler\
                 ENDP
 SVC_Handler     PROC
                 EXPORT  SVC_Handler               [WEAK]
-                MOV     PC, LR                    ; Simply return for now
+				PUSH 	{R0-R3, LR}
+				LDR		R0, =_syscall_table_jump
+				BLX 	R0
+				LDMFD	SP!, {R0-R3, LR}
+				BX		LR                    ; Simply return for now
                 ENDP
 DebugMon_Handler\
                 PROC

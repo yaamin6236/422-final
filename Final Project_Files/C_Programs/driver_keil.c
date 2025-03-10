@@ -27,22 +27,22 @@ int main( ) {
 	
 	_bzero( stringA, 40 );
 	
-//	void* mem1 = _malloc( 1024 );
-//	void* mem2 = _malloc( 1024 );
-//	void* mem3 = _malloc( 8192 );
-//	void* mem4 = _malloc( 4096 );
-//	void* mem5 = _malloc( 512 );
-//	void* mem6 = _malloc( 1024 );
-//	void* mem7 = _malloc( 512 );
-//	_free( mem6 );
-//	_free( mem5 );
-//	_free( mem1 );
-//	_free( mem7 );
-//	_free( mem2 );
-//	void* mem8 = _malloc( 4096 );
-//	_free( mem4 );
-//	_free( mem3 );
-//	_free( mem8 );
+	void* mem1 = _malloc( 1024 );
+	void* mem2 = _malloc( 1024 );
+	void* mem3 = _malloc( 8192 );
+	void* mem4 = _malloc( 4096 );
+	void* mem5 = _malloc( 512 );
+	void* mem6 = _malloc( 1024 );
+	void* mem7 = _malloc( 512 );
+	_free( mem6 );
+	_free( mem5 );
+	_free( mem1 );
+	_free( mem7 );
+	_free( mem2 );
+	void* mem8 = _malloc( 4096 );
+	_free( mem4 );
+	_free( mem3 );
+	_free( mem8 );
 //	
 //	alarmed = (int *)_malloc( 4 );
 //	*alarmed = 1;

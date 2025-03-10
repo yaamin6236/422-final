@@ -29,6 +29,7 @@ _heap_init
 		EXPORT	_kalloc
 _kalloc
 	;; Implement by yourself
+		MOV 	R0, #0x400 		;dummy valid pointer
 		MOV		pc, lr
 		
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

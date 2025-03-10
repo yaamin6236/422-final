@@ -107,9 +107,11 @@ _strncpy_end
 		EXPORT	_malloc
 _malloc
 		; save registers
-		; set the system call # to R7
-	        SVC     #0x0
-		; resume registers
+		; set the system call #4 for SYS_MALLOC to R7
+		MOV 	R7, #4
+		;issue supervisor call
+	    SVC     #0x0
+		; resume registers/return to caller
 		MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,9 +123,11 @@ _malloc
 		EXPORT	_free
 _free
 		; save registers
-		; set the system call # to R7
-        	SVC     #0x0
-		; resume registers
+		; set the system call #5 for SYS_FREE to R7
+		MOV 	R7, #5
+		;issue supervisor call
+		SVC     #0x0
+		; resume registers/return to caller
 		MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -137,9 +141,11 @@ _free
 		EXPORT	_alarm
 _alarm
 		; save registers
-		; set the system call # to R7
-        	SVC     #0x0
-		; resume registers	
+		; set the system call #1 for SYS_ALARM to R7
+		MOV 	R7, #1
+		;issue supervisor call
+        SVC     #0x0
+		; resume registers/return to caller	
 		MOV		pc, lr		
 			
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -153,9 +159,11 @@ _alarm
 		EXPORT	_signal
 _signal
 		; save registers
-		; set the system call # to R7
-        	SVC     #0x0
-		; resume registers
+		; set the system call #2 for SYS-SIGNAL to R7
+		MOV 	R7, #2
+		;issue supervisor call
+        SVC     #0x0
+		; resume registers/return to caller
 		MOV		pc, lr	
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
