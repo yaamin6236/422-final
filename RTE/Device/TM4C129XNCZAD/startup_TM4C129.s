@@ -51,6 +51,8 @@ __heap_limit
 
                 PRESERVE8
                 THUMB
+					
+				IMPORT 	_syscall_table_jump
 
 
 ; Vector Table Mapped to Address 0 at Reset
@@ -225,7 +227,7 @@ Reset_Handler   PROC
 				; Initialize SysTick timer
 				LDR     R0, =_timer_init
 				BLX     R0
-                
+				
                 ; Store the initial MSP
                 LDR     R0, =__initial_sp
                 MOV     R12, R0
@@ -273,16 +275,17 @@ UsageFault_Handler\
 					
 SVC_Handler     PROC
                 EXPORT  SVC_Handler               [WEAK]
+
 				IMPORT	_syscall_table_jump
 				
-                ; Save context (registers that might be changed)
 				PUSH    {R4-R11, LR}                   ; Save registers R4-R11 and Link Register
 
 				; Call the system call jump table function
-				BL      _syscall_table_jump            ; Branch with Link to _syscall_table_jump
+        LDR		R0, =_syscall_table_jump    ; Branch with Link to _syscall_table_jump
+				BLX 	R0
 
-				; Restore context and return
-				POP     {R4-R11, PC}                   ; Restore registers and return by popping to PC
+				POP     {R4-R11, LR}                   ; Restore registers
+        BX		LR                               ; return to caller
 				
                 ENDP
 					
