@@ -263,10 +263,10 @@ UsageFault_Handler\
                 ENDP
 SVC_Handler     PROC
                 EXPORT  SVC_Handler               [WEAK]
-				PUSH 	{R0-R3, LR}
+				PUSH 	{R4-R11, LR}
 				LDR		R0, =_syscall_table_jump
 				BLX 	R0
-				LDMFD	SP!, {R0-R3, LR}
+				POP		{R4-R11, LR}
 				BX		LR                    ; Simply return for now
                 ENDP
 DebugMon_Handler\

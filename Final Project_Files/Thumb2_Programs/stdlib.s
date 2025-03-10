@@ -107,8 +107,8 @@ _strncpy_end
 		EXPORT	_malloc
 _malloc
 		; save registers
-		; set the system call #4 for SYS_MALLOC to R7
-		MOV 	R7, #4
+		; set the system call #3 for SYS_MALLOC to R7
+		MOV 	R7, #3
 		;issue supervisor call
 	    SVC     #0x0
 		; resume registers/return to caller
@@ -123,8 +123,8 @@ _malloc
 		EXPORT	_free
 _free
 		; save registers
-		; set the system call #5 for SYS_FREE to R7
-		MOV 	R7, #5
+		; set the system call #4 for SYS_FREE to R7
+		MOV 	R7, #4
 		;issue supervisor call
 		SVC     #0x0
 		; resume registers/return to caller
