@@ -20,31 +20,31 @@ _bzero
 		MOV			R3, #0
 
 _bzero_loop
-		; decrement n var (R1)
-		SUB			R1, R1, #1
-		
-		; check if n is less than or equal to 0
+		; check if n is equal to 0
 		; branch to _bzero_end if true
 		CMP			R1, #0
 		BEQ			_bzero_end
-		BLT			_bzero_end
+		
+		; decrement n var (R1)
+		SUB			R1, R1, #1
 		
 		; zero-initialize current memory location
 		; accesses contents of R0 and stores byte R3 (set to immediate value 0) in it
-		STRB		R3, [R0]
-		
-		; increment current memory location by one byte
-		ADD			R0, R0, #1
+		; increment to next byte in R0
+		STRB		R3, [R0], #1
 		
 		; continue to next iteration
 		B			_bzero_loop
 
 _bzero_end
-		; stores original address of s (R2) back into R0 (*s)'
+		; store original address of *s (R2) back into R0 (*s)
 		MOV			R0, R2
 
 		; restores original state of registers (before _bzero function call)
 		LDMFD		SP!, {R1-R12, LR}
+		
+		; return back to main function
+		MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; char* _strncpy( char* dest, char* src, int size )
@@ -56,7 +56,46 @@ _bzero_end
 ;   dest
 		EXPORT	_strncpy
 _strncpy
-		; implement your complete logic, including stack operations
+		; store current state of registers before performing any operations
+		STMFD		SP!, {R1-R12, LR}
+		
+		; store original address of *dest (R0) in R3
+		MOV			R3, R0
+		
+		; store original address of *src (R1) in R4
+		MOV			R4, R1
+		
+_strncpy_loop
+		; check if size var equal to 0
+		; branch to _strncpy_end if condition evaluates to true
+		CMP			R2, #0
+		BEQ			_strncpy_end
+		
+		; decrement size var (R2)
+		SUB			R2, R2, #1
+		
+		; load byte at current memory location of *src (R1) and load into R5
+		; increment to next byte in src*
+		LDRB		R5, [R1], #1
+		
+		; store byte stored in R5 and access and store in current memory location of *dest (R0)
+		; increment to next byte in dest*
+		STRB		R5, [R0], #1
+		
+		; continue to next iteration
+		B			_strncpy_loop
+	
+_strncpy_end
+		; store original address of dest (R3) back into R0 (*dest)
+		MOV			R0, R3
+		
+		; store original address of src (R4) back into R1 (*src)
+		MOV			R1, R4
+		
+		; restores original state of registers (before _strncpy function call)
+		LDMFD		SP!, {R1-R12, LR}
+		
+		; return back to main function
 		MOV		pc, lr
 		
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,9 +107,11 @@ _strncpy
 		EXPORT	_malloc
 _malloc
 		; save registers
-		; set the system call # to R7
-	        SVC     #0x0
-		; resume registers
+		; set the system call #3 for SYS_MALLOC to R7
+		MOV 	R7, #3
+		;issue supervisor call
+	    SVC     #0x0
+		; resume registers/return to caller
 		MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,9 +123,11 @@ _malloc
 		EXPORT	_free
 _free
 		; save registers
-		; set the system call # to R7
-        	SVC     #0x0
-		; resume registers
+		; set the system call #4 for SYS_FREE to R7
+		MOV 	R7, #4
+		;issue supervisor call
+		SVC     #0x0
+		; resume registers/return to caller
 		MOV		pc, lr
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -98,9 +141,11 @@ _free
 		EXPORT	_alarm
 _alarm
 		; save registers
-		; set the system call # to R7
-        	SVC     #0x0
-		; resume registers	
+		; set the system call #1 for SYS_ALARM to R7
+		MOV 	R7, #1
+		;issue supervisor call
+        SVC     #0x0
+		; resume registers/return to caller	
 		MOV		pc, lr		
 			
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -114,9 +159,11 @@ _alarm
 		EXPORT	_signal
 _signal
 		; save registers
-		; set the system call # to R7
-        	SVC     #0x0
-		; resume registers
+		; set the system call #2 for SYS-SIGNAL to R7
+		MOV 	R7, #2
+		;issue supervisor call
+        SVC     #0x0
+		; resume registers/return to caller
 		MOV		pc, lr	
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
