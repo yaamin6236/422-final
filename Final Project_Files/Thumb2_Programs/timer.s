@@ -22,9 +22,19 @@ USR_HANDLER     EQU		0x20007B84		; Address of a user-given signal handler functi
 ; void timer_init( )
 		EXPORT		_timer_init
 _timer_init
-	;; Implement by yourself
-	
-		MOV		pc, lr		; return to Reset_Handler
+		; load STCTRL_STOP val and address of SysTick Control and Status Register
+		LDR		R0, =STCTRL_STOP
+		LDR		R1, =STCTRL
+		; store STCTRL_STOP val in SysTick Control and Status Register
+		STR		R0, [R1]
+		
+		; load STRELOAD_MX val and address of SysTick Reload Value Register
+		LDR		R0, =STRELOAD_MX
+		LDR		R1, =STRELOAD
+		; store STRELOAD_MX val in SysTick Reload Value Register
+		STR		R0, [R1]
+		
+		BX		LR		; return to caller
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Timer start
