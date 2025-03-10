@@ -207,15 +207,26 @@ Reset_Handler   PROC
                 EXPORT  Reset_Handler             [WEAK]
                 IMPORT  SystemInit
                 IMPORT  __main
-                IMPORT 	_syscall_table_init
 					
+				IMPORT	_syscall_table_init
+				IMPORT	_kinit
+				IMPORT	_timer_init
+                
                 ; Call SystemInit to set up system clock
                 LDR     R0, =SystemInit
                 BLX     R0
-                
-				;initialize system call table
-				LDR 	R0, =_syscall_table_init
-				BLX 	R0
+				
+				; Initialize system call table
+				LDR     R0, =_syscall_table_init
+				BLX     R0
+				
+				; Initialize heap
+				LDR     R0, =_kinit
+				BLX     R0
+				
+				; Initialize SysTick timer
+				LDR     R0, =_timer_init
+				BLX     R0
 				
                 ; Store the initial MSP
                 LDR     R0, =__initial_sp
@@ -261,14 +272,23 @@ UsageFault_Handler\
                 EXPORT  UsageFault_Handler        [WEAK]
                 B       .
                 ENDP
+					
 SVC_Handler     PROC
                 EXPORT  SVC_Handler               [WEAK]
-				PUSH 	{R4-R11, LR}
-				LDR		R0, =_syscall_table_jump
+
+				IMPORT	_syscall_table_jump
+				
+				PUSH    {R4-R11, LR}                   ; Save registers R4-R11 and Link Register
+
+				; Call the system call jump table function
+        LDR		R0, =_syscall_table_jump    ; Branch with Link to _syscall_table_jump
 				BLX 	R0
-				POP		{R4-R11, LR}
-				BX		LR                    ; Simply return for now
+
+				POP     {R4-R11, LR}                   ; Restore registers
+        BX		LR                               ; return to caller
+				
                 ENDP
+					
 DebugMon_Handler\
                 PROC
                 EXPORT  DebugMon_Handler          [WEAK]
@@ -282,7 +302,17 @@ PendSV_Handler\
 					
 SysTick_Handler PROC
                 EXPORT  SysTick_Handler           [WEAK]
-                MOV     PC, LR                    ; Simply return for now
+				IMPORT	_timer_update
+					
+                ; Save context (registers that might be changed)
+				PUSH    {R4-R11, LR}                   ; Save registers R4-R11 and Link Register
+
+				; Call the timer update function
+				BL      _timer_update                  ; Branch with Link to _timer_update
+
+				; Restore context and return
+				POP     {R4-R11, PC}                   ; Restore registers and return by popping to PC
+				
                 ENDP
 
 GPIOA_Handler\

@@ -17,8 +17,8 @@ INVALID		EQU		-1			; an invalid id
 	
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Memory Control Block Initialization
-		EXPORT	_heap_init
-_heap_init
+		EXPORT	_kinit
+_kinit
 	;; Implement by yourself
 	
 		MOV		pc, lr
