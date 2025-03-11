@@ -95,8 +95,10 @@ _timer_update
 		LDR 	R0, =USR_HANDLER	;R0 = 0x20007B84
 		LDR		R0, [R0]			;R0 = user handler ptr
 		
-		;branch to user handler
-		BX		R0
+		;branch to user handler, save address and restore return address
+		PUSH	{LR}
+		BLX 	R0
+		POP 	{LR}
 		
 timer_update_done
 		;return from _timer_update
