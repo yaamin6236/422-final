@@ -43,21 +43,28 @@ int main( ) {
 	_free( mem4 );
 	_free( mem3 );
 	_free( mem8 );
-//	
-//	alarmed = (int *)_malloc( 4 );
-//	*alarmed = 1;
-//	_signal( SIG_ALRM, sig_handler1 );
-//	_alarm( 2 );
-//	while ( *alarmed != 2 ) {
-//		void* mem9 = _malloc( 4 );	
-//		_free( mem9 );		
-//	}
-//	
-//	_signal( SIG_ALRM, sig_handler2 );
-//	_alarm( 3 );
-//	while ( *alarmed != 3 ) {
-//		void* mem9 = _malloc( 4 );	
-//		_free( mem9 );
-//	}
+	
+	// uncommented this section
+	
+	alarmed = (int *)_malloc( 4 );
+	*alarmed = 1;
+	_signal( SIG_ALRM, sig_handler1 );
+	_alarm( 2 );
+	while ( *alarmed != 2 ) {
+		void* mem9 = _malloc( 4 );	
+		_free( mem9 );		
+	}
+	
+	_signal( SIG_ALRM, sig_handler2 );
+	_alarm( 3 );
+	while ( *alarmed != 3 ) {
+		void* mem9 = _malloc( 4 );	
+		_free( mem9 );
+	}
+	
+//	end section that was uncommented
+	while (1) {
+		;
+		}
 	return 0;
 }
