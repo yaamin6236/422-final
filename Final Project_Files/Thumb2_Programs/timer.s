@@ -77,7 +77,25 @@ _timer_update
 	    EXPORT	_signal_handler
 _signal_handler
 	;; Implement by yourself
-	
-		MOV		pc, lr		; return to Reset_Handler
 		
-		END		
+		; Check if signal is SIGALRM (14)
+        CMP     R0, #14              ; Compare with SIGALRM value
+        BNE     not_alarm            ; If not SIGALRM, skip
+        
+        ; Get address where user handler is stored
+        LDR     R2, =0x20007B84      ; Load USR_HANDLER address
+        
+        ; Store current handler in R0 to return it
+        LDR     R0, [R2]             ; Load current handler address
+        
+        ; Store new handler from R1
+        STR     R1, [R2]             ; Store new handler address
+        
+        BX      LR                   ; Return with old handler in R0
+        
+not_alarm
+        MOV     R0, #0               ; Return 0 for unsupported signals
+        BX      LR                   ; Return to caller
+        
+        END
+	
