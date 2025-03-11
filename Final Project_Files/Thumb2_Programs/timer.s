@@ -65,12 +65,45 @@ _timer_start
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Timer update
 ; void timer_update( )
+;invoked by SysTick interrupt handler
+;reads "seconds left" from memory at address 0x20007B80
+;decrements value by 1 then if value !0, writes updated value back and returns
+;if value == 0, stop SysTick timer and call signal handler
+;signal handler address at 0x20007B84
 		EXPORT		_timer_update
 _timer_update
-	;; Implement by yourself
-	
-		MOV		pc, lr		; return to SysTick_Handler
-
+		;load address of SECOND_LEFT to R0
+		LDR		R0, =SECOND_LEFT	;R0 = address 0x20007B80
+		LDR 	R1, [R0]			;R1 = seconds left
+		
+		;decrement seconds left by 1
+		SUB		R1, R1, #1
+		
+		;write updated seconds left back to memory
+		STR		R1, [R0]
+		
+		;compare new seconds left with 0
+		CMP		R1, #0
+		BNE		timer_update_done	;if !0, branch
+		
+		;If 0, stop SysTick timer, write STCTRL_STOP to STCTRL
+		LDR 	R2, =STCTRL_STOP	;R2 = 0x00000004
+		LDR 	R3, =STCTRL			;R3 = 0xE000E010 (systick control/status reg
+		STR		R2, [R3]			;stop timer
+		
+		;load user handler from 0x20007B84
+		LDR 	R0, =USR_HANDLER	;R0 = 0x20007B84
+		LDR		R0, [R0]			;R0 = user handler ptr
+		
+		;branch to user handler, save address and restore return address
+		PUSH	{LR}
+		BLX 	R0
+		POP 	{LR}
+		
+timer_update_done
+		;return from _timer_update
+		BX		LR
+		
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Timer update
 ; void* signal_handler( int signum, void* handler )
