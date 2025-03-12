@@ -64,9 +64,9 @@ syscall_alarm
 		BX 		R0
 		
 syscall_signal
-		LDR 	R0, =0x20007B08		;SYS_SIGNAL entry address
-		LDR 	R0, [R0] 			;fetch address _signal_handler
-		BX		R0
+		LDR 	R3, =0x20007B08		;SYS_SIGNAL entry address
+		LDR 	R3, [R3] 			;fetch address _signal_handler
+		BX		R3
 		
 syscall_malloc
 		LDR		R0, =0x20007B0C		;load SYS_MALLOC entry address
