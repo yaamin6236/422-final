@@ -281,8 +281,8 @@ SVC_Handler     PROC
 				PUSH    {R4-R11, LR}                   ; Save registers R4-R11 and Link Register
 
 				; Call the system call jump table function
-        LDR		R0, =_syscall_table_jump    ; Branch with Link to _syscall_table_jump
-				BLX 	R0
+        LDR		R2, =_syscall_table_jump    ; Branch with Link to _syscall_table_jump
+				BLX 	R2
 
 				POP     {R4-R11, LR}                   ; Restore registers
         BX		LR                               ; return to caller
@@ -305,7 +305,7 @@ SysTick_Handler PROC
 				IMPORT	_timer_update
 					
                 ; Save context (registers that might be changed)
-				PUSH    {R4-R11, LR}                   ; Save registers R4-R11 and Link Register
+				PUSH    {R0-R12, LR}                   ; Save registers R4-R11 and Link Register
 
 				; Call the timer update function
 				BL      _timer_update                  ; Branch with Link to _timer_update
