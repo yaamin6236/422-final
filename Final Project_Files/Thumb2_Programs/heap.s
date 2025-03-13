@@ -144,8 +144,7 @@ _rfree
 		STRH	R7, [R5]
 		
 		; double size of current block
-		LSL		R2, R2, #1
-		LSL		R2, R2, #4
+		LSL		R2, R2, #5
 		STRH	R2, [R0]
 		
 		; recursively check if we can merge any further, if not, branch to _rfree_done
@@ -159,8 +158,7 @@ _rfree_buddy_left
 		STRH	R7, [R0]
 		
 		; double size of buddy block
-		LSL		R2, R2, #1
-		LSL		R2, R2, #4
+		LSL		R2, R2, #5
 		STRH	R2, [R5]
 		
 		; recursively check if we can merge any further, if not, branch to _rfree_done
