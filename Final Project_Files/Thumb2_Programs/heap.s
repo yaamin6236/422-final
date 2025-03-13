@@ -54,13 +54,21 @@ _kalloc
 ; void free( void *ptr )
 		EXPORT	_kfree
 _kfree
-		; R0 contains the pointer to be freed from memory
+		; R0 contains the starting address to be freed from memory
 		; if R0 is NULL, immediately branch to _kfree_done
 		CMP		R0, #0
 		BEQ		_kfree_done
+		
+		; check if starting address goes beyond dedicated space for HEAP
+		LDR		R1, =HEAP_BOT
+		CMP		R0, R1
+		BGT		_kfree_done
+		
+		LDR		R1, =HEAP_TOP
+		CMP		R0, R1
+		BLT		_kfree_done
 
 		; calculate MCB index (R0 - HEAP_TOP) / MIN_SIZE
-		LDR		R1, =HEAP_TOP
 		SUB		R0, R0, R1
 		LDR		R1, =MIN_SIZE
 		UDIV	R0, R0, R1
