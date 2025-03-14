@@ -136,119 +136,178 @@ ralloc_return
 ; void free( void *ptr )
 		EXPORT	_kfree
 _kfree
-		; R0 contains the starting address to be freed from memory
-		; if R0 is NULL, immediately branch to _kfree_done
-		CMP		R0, #0
-		BEQ		_kfree_done
+		; save registers
+		PUSH	{R4-R11, LR}
+
+		; check if R0 is within range of dedicated heap memory
 		
-		; check if starting address goes beyond dedicated space for HEAP
+		; address is greater than HEAP_BOT
 		LDR		R1, =HEAP_BOT
 		CMP		R0, R1
-		BGT		_kfree_done
+		BGT		invalid_address
 		
+		; address is less than HEAP_TOP
 		LDR		R1, =HEAP_TOP
 		CMP		R0, R1
-		BLT		_kfree_done
+		BLT		invalid_address
 
-		; calculate MCB index (R0 - HEAP_TOP) / MIN_SIZE
-		SUB		R0, R0, R1
-		LDR		R1, =MIN_SIZE
-		UDIV	R0, R0, R1
-
-		; calculate MCB address of R0
-		; MCB_TOP + (MCB_index * 2)
-		LDR		R1, =MCB_TOP
-		ADD		R0, R1, R0, LSL #1
+		; if address is valid, compute corresponding MCB index
+		; mcb_addr = mcb_top + (addr - heap_top) / 16
 		
+		; X = (addr - heap_top)
+		SUB		R0, R0, R1
+		
+		; Y = X / 16
+		MOV		R1, #16
+		UDIV	R0, R0, R1
+		
+		; mcb_top + Y
+		LDR		R1, =MCB_TOP
+		ADD		R0, R0, R1
+		
+		; corresponding mcb_addr is located in R0
 		; call recursive free function
 		BL		_rfree
 		
+		; exit _kfree function
+		B		_kfree_done
+
+invalid_address
+		; return NULL if address is invalid
+		MOV		R0, #0
+
 _kfree_done
-		MOV		R0, #0		; return NULL
+		; restore registers
+		POP		{R4-R11, LR}
 		BX		LR
-		
+	
 _rfree
-		; at this point, R0 contains the respective MCB address for the pointer
-		PUSH	{R4-R11, LR}       ; Save registers
+		; save link register, so we can go back to previous _rfree recursive calls (including initial _rfree call)
+		PUSH	{LR}
 		
-		; load MCB contents value located at R0, update status to available, and store back in R0
-		LDRH	R1, [R0]
-		BIC		R1, R1, #1
-		STRH	R1, [R0]
+		; retrieve
+		;	- mcb_contents (R1): stored in memory at mcb_addr (R0)
+		;	- mcb_offset (R2): 
+		;	- mcb_chunk (R3): mcb_contents /= 16
+		;	- my_size (R4): mcb_contents *= 16
 		
-		; extract heap size associated with MCB entry, store in R2
-		LSR		R2, R1, #4
-		BIC		R2, R2, #0xF000
+		; retrieve mcb_contents, store in R1
+		LDR		R1, [R0]
 		
-		; check if merging is possible (i.e. if heap size retrieved above is not the max of 16KB)
-		; if merging not possible, branch to _rfree_done
-		LDR		R3, =MAX_SIZE
-		CMP		R2, R3
+		; calculate mcb_offset (mcb_addr(R0) - mcb_top(R4)), store in R3
+		LDR		R3, =MCB_TOP
+		SUB		R2, R0, R3
+		
+		; calculate mcb_chunk (mcb_contents(R1) / 16)
+		LSR		R3, R1, #4
+		
+		; calculate mcb_size (mcb_contents(R1) * 16)
+		LSL		R4, R1, #4
+
+		; clear mcb's used bit by storing in memory located at R0
+		STRH	R4, [R0]
+
+		; check if mcb is on the left or right
+		; (mcb_offset / mcb_chunk) % 2
+		; 0 is on left, 1 is on right
+		SDIV	R5, R2, R3		; R5 = (mcb_offset(R2) / mcb_chunk(R3))
+		AND		R5, R5, #1		; R5 = R5 % 2
+		
+		; if R5 is zero, mcb is on left
+		CMP		R5, #0
+		BEQ		is_on_left
+		BNE		is_on_right
+
+_rfree_done
+		POP		{LR}
+		BX		LR
+
+is_on_left
+		; check if buddy is located beyond MCB_BOT. if so, branch to _rfree_done
+		; location of buddy = mcb_addr(R0) + mcb_chunk(R3)
+		ADD		R5, R0, R3
+		LDR		R6, =MCB_BOT
+		CMP		R5, R6
+		BGE		_rfree_done
+
+		; else, buddy is within range
+		; access contents at location of buddy (R5)
+		LDRH	R6, [R5]
+		
+		; check if buddy is in use by getting LSB from its contents(R6)
+		; if in use, branch to _rfree_done
+		AND		R7, R6, #1
+		CMP		R7, #1
 		BEQ		_rfree_done
 		
-		; calculate the current MCB index
-		; (curr_MCB_addr - MCB_TOP) / 2
-		LDR		R3, =MCB_TOP
-		SUB		R4, R0, R3
-		LSR		R4, R4, #1
+		; clear bits 4-0 to get buddy's size
+		LSR		R6, R6, #5
+		LSL		R6, R6, #5
 		
-		; calculate MCB index of buddy
-		; curr_MCB_index ^ (block_size / MIN_SIZE)
-		MOV		R5, R2
-		LSR		R5, R5, #5
-		EOR		R5, R4, R5
-		
-		; retrieve buddy's MCB address
-		LSL		R5, R5, #1
-		ADD		R5, R3, R5
-		
-		; check if buddy is available
-		; if not available, merging not possible, branch to _rfree_done
-		LDRH	R6, [R5]
-		TST		R6, #1
+		; check if buddy's size is equal to our size
+		; if not equal, branch to _rfree_done
+		CMP		R6, R4
 		BNE		_rfree_done
 		
-		; check if buddy has same size as current
-		; if buddy is different size, not possible to merge, branch to _rfree_done
-		LSR		R7, R6, #4
-		BIC		R7, R7, #0xF000
-		CMP		R7, R2
-		BNE		_rfree_done
-		
-		; otherwise, merge buddy with current
-		; check which buddy is on the left
-		CMP		R0, R5			; double check, R4 is current_MCB_index and R5 is buddy actual address
-		BHI		_rfree_buddy_left
-		
-		; current is on the left (R4 < R5)
-		; zero out buddy's MCB entry
+		; buddy is same size so we can clear and merge buddy (R5)
+		; R5 is location of buddy in MCB
 		MOV		R7, #0
 		STRH	R7, [R5]
 		
-		; double size of current block
-		LSL		R2, R2, #5
-		STRH	R2, [R0]
+		; double our size (R4 is our size)
+		LSL		R4, R4, #1
 		
-		; recursively check if we can merge any further, if not, branch to _rfree_done
+		; merge my buddy to me mcb_addr(R0)
+		STRH	R4, [R0]
+		
+		; promote ourselves
+		; recursively call _rfree with us (mcb_addr) !!!
 		BL		_rfree
-		B		_rfree_done		; check if this is necessary
+		B		_rfree_done
+
+is_on_right
+		; check if buddy is located below MCB_TOP. if so, branch to _rfree_done
+		; location of buddy = mcb_addr(R0) - mcb_chunk(R3)
+		SUB		R5, R0, R3
+		LDR		R6, =MCB_TOP
+		CMP		R5, R6
+		BLT		_rfree_done
 		
-_rfree_buddy_left
-		; buddy is on the left
-		; zero out current's MCB entry
+		; else, buddy is within range
+		; access contents at location of buddy (R5)
+		LDRH	R6, [R5]
+		
+		; check if buddy is in use by getting LSB from its contents(R6)
+		; if in use, branch to _rfree_done
+		AND		R7, R6, #1
+		CMP		R7, #1
+		BEQ		_rfree_done
+		
+		; clear bits 4-0 to get buddy's size
+		LSR		R6, R6, #5
+		LSL		R6, R6, #5
+		
+		; check if buddy's size is equal to our size
+		; if not equal, branch to _rfree_done
+		CMP		R6, R4
+		BNE		_rfree_done
+		
+		; buddy is same size so we can clear and merge ourselves (R0)
+		; R5 is location of buddy in MCB
 		MOV		R7, #0
 		STRH	R7, [R0]
 		
-		; double size of buddy block
-		LSL		R2, R2, #5
-		STRH	R2, [R5]
+		; double buddy's size (R6 is buddy's size)
+		LSL		R6, R6, #1
 		
-		; recursively check if we can merge any further, if not, branch to _rfree_done
-		MOV		R0, R5		; set buddy as new current block
+		; merge me to my buddy !!! (R5 is location of buddy)
+		STRH	R6, [R5]
+		
+		; promote buddy
+		MOV		R0, R5
+		
+		; recursively call _rfree with buddy (mcb_addr - mcb_chunk) !!!
 		BL		_rfree
-		
-_rfree_done
-		; restore registers and return
-		POP {R4-R11, PC}
+		B		_rfree_done
 
 		END
