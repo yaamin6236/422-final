@@ -107,7 +107,7 @@ _ralloc
 		MOV		R3, #0
 		
 		; check if size(R0) > act_half_size(R4)
-		CMP		R0, R4
+		CMP		R0, R5
 		BGT		_occupy_chunk
 
 _ralloc_left
