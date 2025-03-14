@@ -192,7 +192,7 @@ _rfree
 		;	- my_size (R4): mcb_contents *= 16
 		
 		; retrieve mcb_contents, store in R1
-		LDR		R1, [R0]
+		LDRH	R1, [R0]
 		
 		; calculate mcb_offset (mcb_addr(R0) - mcb_top(R4)), store in R3
 		LDR		R3, =MCB_TOP
