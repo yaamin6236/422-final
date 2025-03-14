@@ -150,10 +150,19 @@ ralloc_left
 		BX      LR                ;return result
 		
 ralloc_fail
-		MOV 	R0, #0			;return 0 because failed
-		BX 		LR
+    MOV     R0, #0          ;return 0 because failed
+    BX      LR
+	
 ralloc_return
-		BX 		LR
+    ; Split parent MCB if it's free
+    LDRH    R8, [R5]        ;load MCB entry at midpoint
+    ANDS    R8, R8, #1      ;test used bit
+    BNE     skip_split      ;skip if already in use
+    MOV     R8, R7          ;load actual half size into R8
+    STRH    R8, [R5]        ;store at midpoint
+	
+skip_split
+    BX      LR
 		
 		
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -183,8 +192,7 @@ _kfree
 		SUB		R0, R0, R1
 		
 		; Y = X / 16
-		MOV		R1, #16
-		UDIV	R0, R0, R1
+		LSR		R0, R0, #4
 		
 		; mcb_top + Y
 		LDR		R1, =MCB_TOP
