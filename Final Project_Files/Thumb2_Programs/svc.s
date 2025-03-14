@@ -45,40 +45,50 @@ _syscall_table_init
 ; System Call Table Jump Routine
         EXPORT	_syscall_table_jump
 _syscall_table_jump
-		CMP 	R7, #1		;compare R7 with SYS_ALARM
-		BEQ 	syscall_alarm
-		CMP 	R7, #2		;compare R7 with SYS_SIGNAL
-		BEQ 	syscall_signal
-		CMP 	R7, #3 		;compare R7 with SYS_MALLOC
-		BEQ 	syscall_malloc
-		CMP 	R7, #4		;compare R7 with SYS_free
-		BEQ		syscall_free
+        PUSH    {R4-R7, LR}            ; save registers
 		
-		;no match, return 0
-		MOV 	R0, #0
-		BX 		LR
+        CMP     R7, #1              ; compare R7 with SYS_ALARM
+        BEQ     syscall_alarm
+        CMP     R7, #2              ; compare R7 with SYS_SIGNAL
+        BEQ     syscall_signal
+        CMP     R7, #3              ; compare R7 with SYS_MALLOC
+        BEQ     syscall_malloc
+        CMP     R7, #4              ; compare R7 with SYS_FREE
+        BEQ     syscall_free
 		
+_syscall_table_jump_invalid
+        ; no match, return 0
+        MOV     R0, #0
+		
+_syscall_table_jump_done
+        POP     {R4-R7, LR}            ; restore registers
+		BX		LR
+        
 syscall_alarm
-		LDR		R0, =0x20007B04 	;load SYS_ALARM entry address
-		LDR 	R0, [R0]			;fetch address _timer_start
-		BX 		R0
-		
+        LDR     R4, =0x20007B04     ; load SYS_ALARM entry address
+        LDR     R4, [R4]            ; fetch address _timer_start
+        BLX     R4                  ; Call with link so we can return
+        B       _syscall_table_jump_done
+        
 syscall_signal
-		LDR 	R3, =0x20007B08		;SYS_SIGNAL entry address
-		LDR 	R3, [R3] 			;fetch address _signal_handler
-		BX		R3
-		
+        LDR     R4, =0x20007B08     ; SYS_SIGNAL entry address
+        LDR     R4, [R4]            ; fetch address _signal_handler
+        BLX     R4                  ; Call with link so we can return
+        B       _syscall_table_jump_done
+        
 syscall_malloc
-		LDR		R0, =0x20007B0C		;load SYS_MALLOC entry address
-		LDR 	R0, [R0]			;ftech address _kalloc
-		BX 		R0
-		
+        LDR     R4, =0x20007B0C     ; load SYS_MALLOC entry address
+        LDR     R4, [R4]            ; fetch address _kalloc
+        BLX     R4                  ; Call with link so we can return
+        B       _syscall_table_jump_done
+        
 syscall_free
-		LDR 	R0, =0x20007B10		;load SYS_FREE entry address
-		LDR 	R0, [R0] 			;fetch address _kfree
-		BX 		R0
-		
-		END
+        LDR     R4, =0x20007B10     ; load SYS_FREE entry address
+        LDR     R4, [R4]            ; fetch address _kfree
+        BLX     R4                  ; Call with link so we can return
+        B       _syscall_table_jump_done
+        
+        END
 
 
 		

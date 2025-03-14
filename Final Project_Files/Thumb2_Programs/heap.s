@@ -58,91 +58,149 @@ kinit_done
 ; void* _k_alloc( int size )
 		EXPORT	_kalloc
 _kalloc
-		;R0 has requested size in bytes
-		CMP		R0, #32			;min allocation is MIN_SIZE (32bytes)
-		BGE		kalloc_continue
-		MOV		R0, #32
-kalloc_continue
-		LDR 	R1, =MCB_TOP	;R1 is left boundary, start of MCB region
-		LDR 	R2, =MCB_BOT	;R2 is right boundary, end of MCB region
-		BL		_ralloc			;calls recursive helper
-		BX		LR				;return with the heap pointer in R0
+		;Save link register to preserve return address
+		PUSH    {R4-R12, LR}            ;Save return address
 		
-		EXPORT 	_ralloc
+		;R0 has requested size in bytes
+		CMP     R0, #32         ;min allocation is MIN_SIZE (32bytes)
+		BGE     _kalloc_continue
+		MOV     R0, #32
+		
+_kalloc_continue
+		LDR     R1, =MCB_TOP    ;R1 is left boundary, start of MCB region
+		LDR     R2, =MCB_BOT    ;R2 is right boundary, end of MCB region
+		BL      _ralloc         ;calls recursive helper
+		MOV		R0, R3			; move return value of _ralloc to R0
+
+_kalloc_done
+		;Restore link register before returning
+		POP     {R4-R12, LR}
+		MOV		PC, LR              ;return with the heap pointer in R0
+		
 _ralloc
 		;inputs are R0 for requested size in bytes, R1 for left boundary
 		;address of current MCB region, R2 for right boundary
-		;STEP 1: calculate the total number of MCB bytes in this region (entire)
-		SUB		R3, R2, R1		;R3 is difference in bytes between R2 and R1
-		ADD		R3, R3, #2		;R3 is entire = difference plus 2
 		
-		;STEP 2: now get half of entire, in MCB bytes
-		LSRS 	R4, R3, #1		;R4 is half
+		; R3 will be reserved for heap_addr return value
 		
-		;STEP 3: get midpoint in MCB region which is R1 + half
-		ADD		R5, R1, R4		;R5 is midpoint
+		; save link register, so we can go back to previous _ralloc recursive calls (including initial _ralloc call)
+		PUSH	{LR}
 		
-		;STEP 4 convert MCB sizes to heap sizes
-		;MCB byte = 16 heap bytes
-		;actual entire size = entire * 16, actual half size = half * 16
-		MOV 	R6, R3
-		LSL		R6, R6, #4		;R6 is actual entire size
-		MOV 	R7, R4
-		LSL 	R7, R7, #4		;R7 is actual half size
+		; calculate entire(R4) = right(R2) - left(R1) + mcb_ent_sz(R5)
+		SUB		R4, R2, R1		; X = right - left
+		LDR		R5, =MCB_ENT_SZ
+		ADD		R4, R4, R5		; entire = X + mcb_ent_sz
 		
-		;STEP 5 check if requested size in R0 is <= actual half size
-		CMP 	R0, R7
-		BLE		ralloc_left		;if so, allocate from left recursively
-		;STEP 6: if not, attempt allocate entire block at current left boundary R1
-		LDRH 	R8, [R1]		;load mcb entry at R1
-		AND		R8, R8, #1		;test used bit, bit 0
-		CMP 	R8, #0
-		BNE 	ralloc_fail		;if block is used, fail in this region
-		;if block is free, check if available size is big enough
-		LDRH 	R8, [R1]		;reload full mcb entry
-		BIC		R8, R8, #1		;clear used bit to get available size
-		CMP 	R8, R6
-		BLT		ralloc_fail		;if available size less than actual entire size then we fail
-		;otherwise mark block as allocated by setting used bit
-		ORR 	R8, R8, #1
-		STRH 	R8, [R1]
-		;STEP 7 compute corresponding heap address
-		;heap address = HEAP_TOP + (((MCB entry address - MCB_TOP) / MCB_ENT_SZ) * 16)
-		LDR 	R9, =HEAP_TOP 	;R9=HEAP_TOP
-		LDR 	R10, =MCB_TOP	;R10=MCB_TOP
-		SUB 	R11, R1, R10	;R11 is offset in bytes in MCB region
-		ASRS 	R11, R11, #1	;divide offset by 2 (entries are 2bytes)
-		LSL 	R11, R11, #4	;multiply by 16 (entries correspond to 16 heap bytes)
-		ADD 	R0, R9, R11		;R0 gets heap address to return
-		BX 		LR
+		; calculate half(R5) = entire(R4) / 2
+		LSR		R5, R4, #1
 		
-ralloc_left
-		;STEP 8: try allocating from left half of current region
-		;left remains R1, right becomes midpint-MCB_ENT_SZ
-		SUB 	R12, R5, #2		;R12 is new right boundary (R5 - 2)
-		;save registers 1-8 and link register before recursion
-		PUSH 	{R1-R8, LR}
-		;new boundaries are set, R1 unchanged, R2 becomes R12
-		MOV 	R2, R12
-		BL 		_ralloc			;recursive attempt to allocate in left half
-		POP 	{R1-R8, LR} 	;restore registers
-		CMP 	R0, #0
-		BNE 	ralloc_return	;if left allocation success, return it
+		; calculate midpoint(R6) = left(R1) + half(R5)
+		ADD		R6, R1, R5
 		
-		;STEP 9: if left failed, try right
-		PUSH 	{R1-R8, LR} 	;save regosters again before recursion
-		MOV 	R1, R5			;new left boundary is midpoint
-		;original right boudnary R2 stays the same
-		BL 		_ralloc
-		POP 	{R1-R8, LR}
-		BX 		LR				;return result, R0 is 0 if allocation fails
+		; calculate act_entire_size(R4) = entire(R4) * 16
+		LSL		R4, R4, #4
 		
-ralloc_fail
-		MOV 	R0, #0			;return 0 because failed
-		BX 		LR
-ralloc_return
-		BX 		LR
+		; calculate act_half_size(R5) = half(R5) * 16
+		LSL		R5, R5, #4
 		
+		; initialize heap_addr(R3) to NULL
+		MOV		R3, #0
+		
+		; check if size(R0) > act_half_size(R4)
+		CMP		R0, R4
+		BGT		_occupy_chunk
+
+_ralloc_left
+		; save calculations and link register
+		; R3 is reserved as a return register, do not save it
+		PUSH	{R0-R2, R4-R6, LR}
+
+		; set right(R2) = midpoint(R6) - mcb_ent_sz(R7)
+		LDR		R7, =MCB_ENT_SZ
+		SUB		R2, R6, R7
+		
+		; _ralloc( size, left, midpoint - mcb_ent_sz )
+		BL		_ralloc
+		
+		; restore calculations and link register
+		POP		{R0-R2, R4-R6, LR}
+		
+		; check if _ralloc_left succeeds
+		CMP		R3, #INVALID
+		BNE		_split_parent_mcb
+
+_ralloc_right
+		; save calculations and link register
+		; R3 is reserved as a return register, do not save it
+		PUSH	{R0-R2, R4-R6, LR}
+
+		; set left(R1) = midpoint(R6)
+		MOV		R1, R6
+		
+		; _ralloc( size, midpoint, right )
+		BL		_ralloc
+		
+		; restore calculations and link register
+		POP		{R0-R2, R4-R6, LR}
+		
+		; check if _ralloc_right fails
+		CMP		R3, #INVALID
+		BEQ		_return_invalid
+
+_split_parent_mcb
+		; access memory contents at midpoint(R6), store in R7
+		LDRH	R7, [R6]
+		
+		; branch to _return_heap_addr if it's in use
+		TST		R7, #0x01
+		BNE		_return_heap_addr
+		
+		; store act_half_size(R5) in memory location pointed to by midpoint(R6)
+		; branch to _return_heap_addr
+		STRH	R5, [R6]
+		B		_return_heap_addr
+		
+_occupy_chunk
+		; retrieve mcb contents pointed to by left (R1)
+		LDRH		R7, [R1]
+		
+		; branch to _return_invalid if it's in use
+		TST		R7, #0x01
+		BNE		_return_invalid
+		
+		; at this point, mcb contents pointed to by left is confirmed not in use
+		; check if left's mcb contents size < act_entire_size(R4), if so, return invalid
+		LDRH		R7, [R1]
+		CMP		R7, R4
+		BLT		_return_invalid
+		
+		; otherwise, mark left's mcb contents as used
+		ORR		R7, R4, #0x01
+		STRH	R7, [R1]
+		
+		; calculate corresponding heap_addr
+		; heap_addr = heap_top + (left - mcb_top) * 16
+		
+		; X = (left - mcb_top)
+		LDR		R8, =MCB_TOP
+		SUB		R7, R1, R8
+		
+		; Y = X * 16
+		LSL		R7, R7, #4
+		
+		; heap_top + Y
+		LDR		R8, =HEAP_TOP
+		ADD		R7, R8, R7
+		
+		; corresponding heap_addr is calculated, branch to _return_heap_addr
+		B		_return_heap_addr
+		
+_return_invalid
+		MOV		R3, #INVALID
+		
+_return_heap_addr
+		POP		{LR}
+		MOV		PC, LR
 		
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Kernel Memory De-allocation
@@ -171,8 +229,7 @@ _kfree
 		SUB		R0, R0, R1
 		
 		; Y = X / 16
-		MOV		R1, #16
-		UDIV	R0, R0, R1
+		LSR		R0, R0, #4
 		
 		; mcb_top + Y
 		LDR		R1, =MCB_TOP
