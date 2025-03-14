@@ -45,7 +45,8 @@ _syscall_table_init
 ; System Call Table Jump Routine
         EXPORT	_syscall_table_jump
 _syscall_table_jump
-        PUSH    {R4, LR}            ; Save LR and a register for address
+        PUSH    {R4-R7, LR}            ; save registers
+		
         CMP     R7, #1              ; compare R7 with SYS_ALARM
         BEQ     syscall_alarm
         CMP     R7, #2              ; compare R7 with SYS_SIGNAL
@@ -60,7 +61,8 @@ _syscall_table_jump_invalid
         MOV     R0, #0
 		
 _syscall_table_jump_done
-        POP     {R4, PC}            ; Return directly by popping to PC
+        POP     {R4-R7, LR}            ; restore registers
+		BX		LR
         
 syscall_alarm
         LDR     R4, =0x20007B04     ; load SYS_ALARM entry address

@@ -281,8 +281,7 @@ SVC_Handler     PROC
 				PUSH    {R4-R11, LR}                   ; Save registers R4-R11 and Link Register
 
 				; Call the system call jump table function
-				LDR		R2, =_syscall_table_jump       ; Branch with Link to _syscall_table_jump
-				BLX 	R2
+				BL		_syscall_table_jump
 
 				POP     {R4-R11, LR}                   ; Restore registers
 				BX		LR

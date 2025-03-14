@@ -107,7 +107,7 @@ _strncpy_end
 		EXPORT	_malloc
 _malloc
 		; save registers
-		PUSH	{R4-R11, LR}
+		PUSH	{R4-R11}
 		
 		; set the system call #3 for SYS_MALLOC to R7
 		MOV 	R7, #3
@@ -116,7 +116,7 @@ _malloc
 	    SVC     #0x3
 		
 		; resume registers/return to caller
-		POP		{R4-R11, LR}
+		POP		{R4-R11}
 		BX		LR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,7 +128,7 @@ _malloc
 		EXPORT	_free
 _free
 		; save registers
-		PUSH	{R4-R11, LR}
+		PUSH	{R4-R11}
 		
 		; set the system call #4 for SYS_FREE to R7
 		MOV 	R7, #4
@@ -137,7 +137,7 @@ _free
 		SVC     #0x4
 		
 		; resume registers/return to caller
-		POP		{R4-R11, LR}
+		POP		{R4-R11}
 		BX		LR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -151,7 +151,7 @@ _free
 		EXPORT	_alarm
 _alarm
 		; save registers
-		PUSH	{R1-R11, LR}
+		PUSH	{R4-R11}
 		
 		; set the system call #1 for SYS_ALARM to R7
 		MOV 	R7, #1
@@ -160,7 +160,7 @@ _alarm
         SVC     #0x1
 		
 		; resume registers/return to caller	
-		POP		{R1-R11, LR}
+		POP		{R4-R11}
 		BX		LR
 			
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -174,7 +174,7 @@ _alarm
 		EXPORT	_signal
 _signal
 		; save registers
-		PUSH	{R2-R11, LR}
+		PUSH	{R4-R11}
 		
 		; set the system call #2 for SYS-SIGNAL to R7
 		MOV 	R7, #2
@@ -183,7 +183,7 @@ _signal
         SVC     #0x2
 		
 		; resume registers/return to caller
-		POP		{R2-R11, LR}
+		POP		{R4-R11}
 		BX		LR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
