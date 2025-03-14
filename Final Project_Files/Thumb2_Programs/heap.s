@@ -19,24 +19,37 @@ INVALID		EQU		-1			; an invalid id
 ; Memory Control Block Initialization
 		EXPORT	_kinit
 _kinit
-		;initialize MCB area
+		; initialize heap space
+		LDR		R0, =HEAP_TOP
+		LDR		R1, =HEAP_BOT
+		MOV		R2, #0
+
+zero_loop_heap
+		CMP		R0, R1
+		BHS		mcb_init
+		
+		STR		R2, [R0], #4
+		
+		B		zero_loop_heap
+
+mcb_init
+		; initialize MCB space
 		LDR 	R0, =MCB_TOP	;R0 points to 0x20006800
 		LDR 	R1, =MAX_SIZE	;R1 gets 0x4000, entire heap is available
-		STRH 	R1, [R0]		;1st MCB entry gets MAX_SIZE
+		STRH 	R1, [R0], #2	;1st MCB entry gets MAX_SIZE, continues to next entry
 		
-		;sero out the rest of the mcb entries
-		;R2 gets end address which is MCB_BOT + 2
-		LDR 	R2, =MCB_BOT
-		ADD 	R2, R2, #2		;mcb end
-		;R0 points to next entry
-		ADD 	R0, R0, #2
-zero_loop
-		CMP 	R0, R2
-		BCS 	kinit_done		;if R0 >= end then done
-		MOV 	R1, #0
-		STRH 	R1, [R0]
-		ADD 	R0, R0, #2		;next entry
-		B		zero_loop
+		;zero out the rest of the mcb entries
+		;R1 gets end address which is MCB_BOT
+		LDR 	R1, =MCB_BOT
+
+zero_loop_mcb
+		CMP 	R0, R1
+		BHS 	kinit_done		;if R0 >= end then done
+
+		STRH 	R2, [R0], #2
+
+		B		zero_loop_mcb
+
 kinit_done
 		BX		LR
 
