@@ -11,7 +11,7 @@
 		EXPORT	_bzero
 _bzero
 		; store current state of registers before performing any operations
-		STMFD		SP!, {R1-R12, LR}
+		PUSH		{R1-R12, LR}
 		
 		; store original address of *s (R0) in R2
 		MOV			R2, R0
@@ -41,10 +41,10 @@ _bzero_end
 		MOV			R0, R2
 
 		; restores original state of registers (before _bzero function call)
-		LDMFD		SP!, {R1-R12, LR}
+		POP		{R1-R12, LR}
 		
 		; return back to main function
-		MOV		pc, lr
+		BX		LR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; char* _strncpy( char* dest, char* src, int size )
@@ -57,7 +57,7 @@ _bzero_end
 		EXPORT	_strncpy
 _strncpy
 		; store current state of registers before performing any operations
-		STMFD		SP!, {R1-R12, LR}
+		PUSH		{R2-R12, LR}
 		
 		; store original address of *dest (R0) in R3
 		MOV			R3, R0
@@ -93,10 +93,10 @@ _strncpy_end
 		MOV			R1, R4
 		
 		; restores original state of registers (before _strncpy function call)
-		LDMFD		SP!, {R1-R12, LR}
+		POP		{R2-R12, LR}
 		
 		; return back to main function
-		MOV		pc, lr
+		BX		LR
 		
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; void* _malloc( int size )
@@ -107,12 +107,17 @@ _strncpy_end
 		EXPORT	_malloc
 _malloc
 		; save registers
+		PUSH	{LR}
+		
 		; set the system call #3 for SYS_MALLOC to R7
 		MOV 	R7, #3
+		
 		;issue supervisor call
 	    SVC     #0x0
+		
 		; resume registers/return to caller
-		MOV		pc, lr
+		POP		{LR}
+		BX		LR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; void _free( void* addr )
@@ -123,12 +128,17 @@ _malloc
 		EXPORT	_free
 _free
 		; save registers
+		PUSH	{LR}
+		
 		; set the system call #4 for SYS_FREE to R7
 		MOV 	R7, #4
+		
 		;issue supervisor call
 		SVC     #0x0
+		
 		; resume registers/return to caller
-		MOV		pc, lr
+		POP		{LR}
+		BX		LR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; unsigned int _alarm( unsigned int seconds )
@@ -141,12 +151,17 @@ _free
 		EXPORT	_alarm
 _alarm
 		; save registers
+		PUSH	{LR}
+		
 		; set the system call #1 for SYS_ALARM to R7
 		MOV 	R7, #1
+		
 		;issue supervisor call
         SVC     #0x0
+		
 		; resume registers/return to caller	
-		MOV		pc, lr		
+		POP		{LR}
+		BX		LR
 			
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; void* _signal( int signum, void *handler )
@@ -159,11 +174,16 @@ _alarm
 		EXPORT	_signal
 _signal
 		; save registers
+		PUSH	{LR}
+		
 		; set the system call #2 for SYS-SIGNAL to R7
 		MOV 	R7, #2
+		
 		;issue supervisor call
         SVC     #0x0
+		
 		; resume registers/return to caller
+		POP		{LR}
 		MOV		pc, lr	
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
