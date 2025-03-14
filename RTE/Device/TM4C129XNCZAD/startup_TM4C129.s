@@ -285,7 +285,7 @@ SVC_Handler     PROC
 				BLX 	R2
 
 				POP     {R4-R11, LR}                   ; Restore registers
-				BX		LR                             ; return to caller
+				BX		LR
 				
                 ENDP
 					
@@ -305,7 +305,7 @@ SysTick_Handler PROC
 				IMPORT	_timer_update
 					
                 ; Save context (registers that might be changed)
-				PUSH    {R0-R12, LR}                   ; Save registers R4-R11 and Link Register
+				PUSH    {R4-R11, LR}                   ; Save registers R4-R11 and Link Register
 
 				; Call the timer update function
 				BL      _timer_update                  ; Branch with Link to _timer_update

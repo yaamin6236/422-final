@@ -58,15 +58,21 @@ kinit_done
 ; void* _k_alloc( int size )
 		EXPORT	_kalloc
 _kalloc
-		;R0 has requested size in bytes
-		CMP		R0, #32			;min allocation is MIN_SIZE (32bytes)
-		BGE		kalloc_continue
-		MOV		R0, #32
+    ;Save link register to preserve return address
+    PUSH    {LR}            ;Save return address
+    
+    ;R0 has requested size in bytes
+    CMP     R0, #32         ;min allocation is MIN_SIZE (32bytes)
+    BGE     kalloc_continue
+    MOV     R0, #32
 kalloc_continue
-		LDR 	R1, =MCB_TOP	;R1 is left boundary, start of MCB region
-		LDR 	R2, =MCB_BOT	;R2 is right boundary, end of MCB region
-		BL		_ralloc			;calls recursive helper
-		BX		LR				;return with the heap pointer in R0
+    LDR     R1, =MCB_TOP    ;R1 is left boundary, start of MCB region
+    LDR     R2, =MCB_BOT    ;R2 is right boundary, end of MCB region
+    BL      _ralloc         ;calls recursive helper
+    
+    ;Restore link register before returning
+    POP     {LR}
+    BX      LR              ;return with the heap pointer in R0
 		
 		EXPORT 	_ralloc
 _ralloc
@@ -118,24 +124,30 @@ _ralloc
 		
 ralloc_left
 		;STEP 8: try allocating from left half of current region
-		;left remains R1, right becomes midpint-MCB_ENT_SZ
-		SUB 	R12, R5, #2		;R12 is new right boundary (R5 - 2)
-		;save registers 1-8 and link register before recursion
-		PUSH 	{R1-R8, LR}
+		SUB     R12, R5, #2       ;R12 is new right boundary (R5 - 2)
+		;save registers needed to continue after recursion
+		PUSH    {R1-R8, LR}       ; Save link register 
 		;new boundaries are set, R1 unchanged, R2 becomes R12
-		MOV 	R2, R12
-		BL 		_ralloc			;recursive attempt to allocate in left half
-		POP 	{R1-R8, LR} 	;restore registers
-		CMP 	R0, #0
-		BNE 	ralloc_return	;if left allocation success, return it
+		MOV     R2, R12
+		BL      _ralloc           ;recursive attempt to allocate in left half
+		
+		;Save allocation result temporarily
+		MOV     R12, R0
+		
+		;Restore registers
+		POP     {R1-R8, LR}
+		
+		;Check if allocation succeeded
+		MOV     R0, R12
+		CMP     R0, #0
+		BNE     ralloc_return     ;if left allocation success, return it
 		
 		;STEP 9: if left failed, try right
-		PUSH 	{R1-R8, LR} 	;save regosters again before recursion
-		MOV 	R1, R5			;new left boundary is midpoint
-		;original right boudnary R2 stays the same
-		BL 		_ralloc
-		POP 	{R1-R8, LR}
-		BX 		LR				;return result, R0 is 0 if allocation fails
+		PUSH    {R1-R8, LR}       ;save registers again before recursion
+		MOV     R1, R5            ;new left boundary is midpoint
+		BL      _ralloc
+		POP     {R1-R8, LR}
+		BX      LR                ;return result
 		
 ralloc_fail
 		MOV 	R0, #0			;return 0 because failed
