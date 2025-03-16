@@ -210,19 +210,19 @@ _return_heap_addr
 		EXPORT	_kfree
 _kfree
 		; save registers
-		PUSH	{R4-R11, LR}
+		PUSH	{R4-R12, LR}
 
 		; check if R0 is within range of dedicated heap memory
 		
 		; address is greater than HEAP_BOT
 		LDR		R1, =HEAP_BOT
 		CMP		R0, R1
-		BGT		invalid_address
+		BGT		_kfree_invalid
 		
 		; address is less than HEAP_TOP
 		LDR		R1, =HEAP_TOP
 		CMP		R0, R1
-		BLT		invalid_address
+		BLT		_kfree_invalid
 
 		; if address is valid, compute corresponding MCB index
 		; mcb_addr = mcb_top + (addr - heap_top) / 16
@@ -241,21 +241,23 @@ _kfree
 		; call recursive free function
 		BL		_rfree
 		
-		; exit _kfree function
-		B		_kfree_done
+		; branch to _kfree_done if _rfree operation successful
+		; otherwise, set return value to 0 and return
+		CMP		R0, #INVALID
+		BNE		_kfree_done
 
-invalid_address
+_kfree_invalid
 		; return NULL if address is invalid
 		MOV		R0, #0
 
 _kfree_done
 		; restore registers
-		POP		{R4-R11, LR}
+		POP		{R4-R12, LR}
 		BX		LR
 	
 _rfree
-		; save link register, so we can go back to previous _rfree recursive calls (including initial _rfree call)
-		PUSH	{LR}
+		; save registers, so we can go back to previous _rfree recursive calls (including initial _rfree call)
+		PUSH	{R4-R12, LR}
 		
 		; retrieve
 		;	- mcb_contents (R1): stored in memory at mcb_addr (R0)
@@ -266,7 +268,7 @@ _rfree
 		; retrieve mcb_contents, store in R1
 		LDRH	R1, [R0]
 		
-		; calculate mcb_offset (mcb_addr(R0) - mcb_top(R4)), store in R3
+		; calculate mcb_offset = (mcb_addr(R0) - mcb_top(R3)), store in R2
 		LDR		R3, =MCB_TOP
 		SUB		R2, R0, R3
 		
@@ -276,23 +278,18 @@ _rfree
 		; calculate mcb_size (mcb_contents(R1) * 16)
 		LSL		R4, R1, #4
 
-		; clear mcb's used bit by storing in memory located at R0
+		; clear mcb's used bit and store in memory located at R0
+		BIC		R4, R1, #0x01
 		STRH	R4, [R0]
 
 		; check if mcb is on the left or right
 		; (mcb_offset / mcb_chunk) % 2
 		; 0 is on left, 1 is on right
-		SDIV	R5, R2, R3		; R5 = (mcb_offset(R2) / mcb_chunk(R3))
-		AND		R5, R5, #1		; R5 = R5 % 2
+		UDIV	R5, R2, R3		; R5 = (mcb_offset(R2) / mcb_chunk(R3))
 		
-		; if R5 is zero, mcb is on left
-		CMP		R5, #0
-		BEQ		is_on_left
+		; if R5 LSB is one, mcb is on left, otherwise mcb is on right
+		TST		R5, #0x01
 		BNE		is_on_right
-
-_rfree_done
-		POP		{LR}
-		BX		LR
 
 is_on_left
 		; check if buddy is located beyond MCB_BOT. if so, branch to _rfree_done
@@ -300,7 +297,7 @@ is_on_left
 		ADD		R5, R0, R3
 		LDR		R6, =MCB_BOT
 		CMP		R5, R6
-		BGE		_rfree_done
+		BGE		_rfree_invalid
 
 		; else, buddy is within range
 		; access contents at location of buddy (R5)
@@ -308,9 +305,8 @@ is_on_left
 		
 		; check if buddy is in use by getting LSB from its contents(R6)
 		; if in use, branch to _rfree_done
-		AND		R7, R6, #1
-		CMP		R7, #1
-		BEQ		_rfree_done
+		TST		R6, #0x01
+		BNE		_rfree_done
 		
 		; clear bits 4-0 to get buddy's size
 		LSR		R6, R6, #5
@@ -335,7 +331,6 @@ is_on_left
 		; promote ourselves
 		; recursively call _rfree with us (mcb_addr) !!!
 		BL		_rfree
-		B		_rfree_done
 
 is_on_right
 		; check if buddy is located below MCB_TOP. if so, branch to _rfree_done
@@ -343,7 +338,7 @@ is_on_right
 		SUB		R5, R0, R3
 		LDR		R6, =MCB_TOP
 		CMP		R5, R6
-		BLT		_rfree_done
+		BLT		_rfree_invalid
 		
 		; else, buddy is within range
 		; access contents at location of buddy (R5)
@@ -351,9 +346,8 @@ is_on_right
 		
 		; check if buddy is in use by getting LSB from its contents(R6)
 		; if in use, branch to _rfree_done
-		AND		R7, R6, #1
-		CMP		R7, #1
-		BEQ		_rfree_done
+		TST		R6, #0x01
+		BNE		_rfree_done
 		
 		; clear bits 4-0 to get buddy's size
 		LSR		R6, R6, #5
@@ -380,6 +374,12 @@ is_on_right
 		
 		; recursively call _rfree with buddy (mcb_addr - mcb_chunk) !!!
 		BL		_rfree
-		B		_rfree_done
+
+_rfree_invalid
+		MOV		R0, #INVALID
+
+_rfree_done
+		POP		{R4-R12, LR}
+		BX		LR
 
 		END
