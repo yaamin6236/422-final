@@ -83,9 +83,6 @@ _ralloc
 		
 		; R3 will be reserved for heap_addr return value
 		
-		; save link register, so we can go back to previous _ralloc recursive calls (including initial _ralloc call)
-		PUSH	{LR}
-		
 		; calculate entire(R4) = right(R2) - left(R1) + mcb_ent_sz(R5)
 		SUB		R4, R2, R1		; X = right - left
 		LDR		R5, =MCB_ENT_SZ
@@ -201,8 +198,7 @@ _return_invalid
 		MOV		R3, #INVALID
 		
 _return_heap_addr
-		POP		{LR}
-		MOV		PC, LR
+		BX		LR
 		
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Kernel Memory De-allocation
