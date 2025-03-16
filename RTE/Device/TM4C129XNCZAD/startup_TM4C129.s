@@ -286,8 +286,11 @@ SVC_Handler     PROC
 
 				POP     {R4-R11, LR}                   ; Restore registers
 				
-				; move return value in R3, to R4
+				; move return value in R3 to R4 (for _kalloc calls)
 				MOV		R4, R3
+				
+				; move return value in R0 to R5 (for _signal_handler calls)
+				MOV		R5, R0
 				
 				BX		LR
 				
