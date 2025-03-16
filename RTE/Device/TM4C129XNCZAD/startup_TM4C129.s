@@ -25,35 +25,35 @@
 ;//-------- <<< Use Configuration Wizard in Context Menu >>> ------------------
 ;*/
 
-
-; <h> Stack Configuration
-;   <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
-; </h>
-
-Stack_Size      EQU     0x00000200
-
-                AREA    STACK, NOINIT, READWRITE, ALIGN=3
-Stack_Mem       SPACE   Stack_Size
-__initial_sp
-
-
 ; <h> Heap Configuration
 ;   <o>  Heap Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
 
-Heap_Size       EQU     0x00000000
+Heap_Size       EQU     0x00005000
 
                 AREA    HEAP, NOINIT, READWRITE, ALIGN=3
 __heap_base
 Heap_Mem        SPACE   Heap_Size
 __heap_limit
 
+; <h> Stack Configuration
+;   <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
+; </h>
+
+Handler_Stack_Size  	EQU     0x00000800
+					
+Thread_Stack_Size		EQU	0x00000800	
+
+                AREA    STACK, NOINIT, READWRITE, ALIGN=3
+
+Thread_Stack_Mem		SPACE	Thread_Stack_Size		
+__initial_user_sp
+
+Handler_Stack_Mem       SPACE   Handler_Stack_Size
+__initial_sp
 
                 PRESERVE8
                 THUMB
-					
-				IMPORT 	_syscall_table_jump
-
 
 ; Vector Table Mapped to Address 0 at Reset
 
@@ -212,6 +212,11 @@ Reset_Handler   PROC
 				IMPORT	_kinit
 				IMPORT	_timer_init
                 
+				LDR		R1, =__initial_sp
+				MSR		MSP, R1
+				
+				ISB
+				
                 ; Call SystemInit to set up system clock
                 LDR     R0, =SystemInit
                 BLX     R0
@@ -228,21 +233,19 @@ Reset_Handler   PROC
 				LDR     R0, =_timer_init
 				BLX     R0
 				
-                ; Store the initial MSP
-                LDR     R0, =__initial_sp
-                MOV     R12, R0
+                LDR		R1, =__initial_user_sp
+				MSR		PSP, R1
                 
-                ; Set up and switch to PSP for user mode
-                LDR     R0, =Stack_Mem            ; Base of stack memory
-                ADD     R0, R0, #Stack_Size       ; Calculate top of user stack
-                MOV     R0, #0x2                  ; Set control bit 1 (SPSEL) to use PSP
-                ISB                               ; Instruction Synchronization Barrier
+                MOV		R1, #0x3
+				MSR		CONTROL, R1
+				ISB
                 
                 ; Branch to __main (which will call main())
                 LDR     R0, =__main
                 BX      R0
                 ENDP
-
+					
+				B		.
 
 ; Dummy Exception Handlers (infinite loops which can be modified)
 
@@ -289,9 +292,9 @@ SVC_Handler     PROC
 				BX		LR
 				
                 ENDP
-					
-DebugMon_Handler\
-                PROC
+
+DebugMon_Handler PROC
+	
                 EXPORT  DebugMon_Handler          [WEAK]
                 B       .
                 ENDP
@@ -300,7 +303,7 @@ PendSV_Handler\
                 EXPORT  PendSV_Handler            [WEAK]
                 B       .
                 ENDP
-					
+
 SysTick_Handler PROC
                 EXPORT  SysTick_Handler           [WEAK]
 				IMPORT	_timer_update
@@ -1051,7 +1054,7 @@ GPIOT_Handler\
 
                 IF      :DEF:__MICROLIB
 
-                EXPORT  __initial_sp
+                EXPORT  __initial_user_sp
                 EXPORT  __heap_base
                 EXPORT  __heap_limit
 
@@ -1062,9 +1065,9 @@ GPIOT_Handler\
 __user_initial_stackheap
 
                 LDR     R0, =  Heap_Mem
-                LDR     R1, =(Stack_Mem + Stack_Size)
+                LDR     R1, =(Thread_Stack_Mem + Thread_Stack_Size)
                 LDR     R2, = (Heap_Mem +  Heap_Size)
-                LDR     R3, = Stack_Mem
+                LDR     R3, = Thread_Stack_Mem
                 BX      LR
 
                 ALIGN
