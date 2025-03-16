@@ -235,9 +235,7 @@ Reset_Handler   PROC
                 ; Set up and switch to PSP for user mode
                 LDR     R0, =Stack_Mem            ; Base of stack memory
                 ADD     R0, R0, #Stack_Size       ; Calculate top of user stack
-                MSR     PSP, R0                   ; Set PSP
                 MOV     R0, #0x2                  ; Set control bit 1 (SPSEL) to use PSP
-                MSR     CONTROL, R0               ; Update CONTROL register
                 ISB                               ; Instruction Synchronization Barrier
                 
                 ; Branch to __main (which will call main())
@@ -284,6 +282,10 @@ SVC_Handler     PROC
 				BL		_syscall_table_jump
 
 				POP     {R4-R11, LR}                   ; Restore registers
+				
+				; move return value in R3, to R4
+				MOV		R4, R3
+				
 				BX		LR
 				
                 ENDP

@@ -115,6 +115,9 @@ _malloc
 		;issue supervisor call
 	    SVC     #0x3
 		
+		; move return value in R4 to R0
+		MOV		R0, R4
+		
 		; resume registers/return to caller
 		POP		{R4-R11}
 		BX		LR

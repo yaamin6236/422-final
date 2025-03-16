@@ -192,6 +192,8 @@ _occupy_chunk
 		LDR		R8, =HEAP_TOP
 		ADD		R7, R8, R7
 		
+		MOV		R3, R7
+		
 		; corresponding heap_addr is calculated, branch to _return_heap_addr
 		B		_return_heap_addr
 		
