@@ -185,6 +185,9 @@ _signal
 		;issue supervisor call
         SVC     #0x2
 		
+		; move return value from R5 to R0
+		MOV		R0, R5
+		
 		; resume registers/return to caller
 		POP		{R4-R11}
 		BX		LR
