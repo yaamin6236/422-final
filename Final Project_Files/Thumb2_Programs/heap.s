@@ -159,7 +159,7 @@ _split_parent_mcb
 		
 _occupy_chunk
 		; retrieve mcb contents pointed to by left (R1)
-		LDRH		R7, [R1]
+		LDRH	R7, [R1]
 		
 		; branch to _return_invalid if it's in use
 		TST		R7, #0x01
@@ -167,7 +167,7 @@ _occupy_chunk
 		
 		; at this point, mcb contents pointed to by left is confirmed not in use
 		; check if left's mcb contents size < act_entire_size(R4), if so, return invalid
-		LDRH		R7, [R1]
+		LDR		R7, [R1]
 		CMP		R7, R4
 		BLT		_return_invalid
 		
@@ -189,6 +189,7 @@ _occupy_chunk
 		LDR		R8, =HEAP_TOP
 		ADD		R7, R8, R7
 		
+		; store calculated heap_addr in R3 (temp designated return register)
 		MOV		R3, R7
 		
 		; corresponding heap_addr is calculated, branch to _return_heap_addr
