@@ -109,22 +109,26 @@ timer_update_done
 ; void* signal_handler( int signum, void* handler )
 	    EXPORT	_signal_handler
 _signal_handler
-	;; Implement by yourself
 	
-		 ; Check if signal is SIGALRM (14)
-        CMP     R0, #14              ; Compare with SIGALRM value
+		; Check if signal is SIGALRM (14)
+		LDR		R2, =SIGALRM
+        CMP     R0, R2               ; Compare with SIGALRM value
         BNE     not_alarm            ; If not SIGALRM, skip
 
         ; Get address where user handler is stored
-        LDR     R2, =0x20007B84      ; Load USR_HANDLER address
+        LDR     R2, =USR_HANDLER      ; Load USR_HANDLER address
 
-        ; Store current handler in R0 to return it
-        LDR     R0, [R2]             ; Load current handler address
+		; load previous value of USR_HANDLER in R3
+		LDR		R3, [R2]
 
-        ; Store new handler from R1
-        STR     R1, [R2]             ; Store new handler address
+        ; store new handler at address USR_HANDLER
+        STR     R1, [R2]
 
-        BX      LR                   ; Return with old handler in R0	
+        ; move previous user handler to R0 (return register)
+		MOV		R0, R3
+
+        BX      LR                   ; Return with old handler in R0
+
 not_alarm
         MOV     R0, #0               ; Return 0 for unsupported signals
         BX      LR                   ; Return to caller		
